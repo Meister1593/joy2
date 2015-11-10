@@ -1,0 +1,27 @@
+{
+  "name": "joy2",
+  "version": "0.1.0",
+  "description": "WebSocket server for joystick notifications",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/glurp/joy2"
+  },
+  "keywords": [
+    "Electron",
+    "joystick",
+    "gamepad"
+  ],
+  "author": "Actemium",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/glurp/joy2/issues"
+  },
+  "homepage": "https://github.com/glurp/joy2#readme",
+  "devDependencies": {
+    "electron-prebuilt": "^0.34.0"
+  }
+}
