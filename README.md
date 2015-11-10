@@ -11,5 +11,5 @@ Usage
 > firefox client_test.html
 ```
 
-press a button the  joystick...
+press a button o the  joystick...
 
