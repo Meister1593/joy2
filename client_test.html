@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<body>
+<div style="width:200px;height:200px;border:inset 2px black;">
+ <div style="position:relative;left:100px;top:100px;" id="croix">x</div>
+</div>
+<div style="height:300px">
+<div id="ws"></div>
+<pre id="log"></pre>
+</div>
+<script>
+function message(id,txt) {
+ var node=document.getElementById(id)
+ if (node) node.innerHTML=txt;
+}
+// helper function: log message to screen
+function log(msg) {
+    var c=document.getElementById('log').textContent;
+    c=msg+"\n"+c;
+    if (c.length>400)
+      c=c.substring(0,300);
+    document.getElementById('log').textContent=c
+}
+function show(msg,d) {
+    var node=document.getElementById("croix");
+    if (node) {
+      xyz=JSON.parse(msg);
+      x=xyz[0],y=xyz[1],date=xyz[5];
+      node.style.left=""+x+"px";
+      node.style.top=""+y+"px";
+      message("ws",""+(d-date)+" ms")
+    }
+}
+var ok=false;
+// setup websocket with callbacks
+function createClient(port) {
+  if (ok)  return;
+  var ws = new WebSocket("ws://localhost:"+port);
+  ws.onopen = function() {
+     ok=true;
+     log('CONNECT');
+  };
+  ws.onclose = function() {
+     ok=false;
+     log('DISCONNECT');
+  };
+  ws.onmessage = function(event) {
+    var d=((new Date().getTime())%1000)
+    log("MESSAGE "+event.data + "   at " + d);
+    show(event.data,d);
+  };
+}
+setInterval(function() { createClient(1901); },2000);
+</script>
+</body>
+</html>
+
+
