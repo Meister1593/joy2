@@ -23,6 +23,19 @@ Usage
 
 press a button on the  joystick to activate the server ...
 
+Files
+===
+
+**index.html** : main page, with include joy.js
+
+**joy.js** : gamepad and websocket server.
+
+**client_test.html** : can be invoked by a navigator for client websocket test.
+
+modules :
+*  ws for a websocket server,
+*  many many module for Electron  GUI : Chromium under Node.js.
+   
 License
 ====
 MIT
