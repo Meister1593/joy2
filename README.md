@@ -1,12 +1,13 @@
 Presentation
 ===
 Electron application  for dispatch local Joystick data to WebSocket client 
-Tested on Windows 7.
-Should work on any environnement suppporting Electron.
 
+
+
+Should work on any environnement suppporting Electron.Tested on Windows 7.
 
 The joystick USB should be configured as gamepad, et  seeing by  Chrome/Chormium (HTML 5).
-(HID device)
+(HID/Xinput device)
 
 Websocket distribution offer jouystick acces for any application which 
 do not support HID ou XInput.
@@ -17,6 +18,8 @@ Usage
 ```
 > npm install
 > npm start
+or
+> .\node_modules\.bin\electron.exe .
 
 > firefox client_test.html
 ```
@@ -25,6 +28,8 @@ press a button on the  joystick to activate the server ...
 
 Files
 ===
+
+** main.js** : startup Electron : load index.html
 
 **index.html** : main page, with include joy.js
 

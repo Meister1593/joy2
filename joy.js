@@ -1,6 +1,6 @@
-//=============================================== 
+//============================================================================= 
 // WebSocket Server
-//=============================================== 
+//============================================================================= 
 
 var WebSocketServer = require('ws').Server;
 var wss =null;
@@ -19,7 +19,10 @@ function initWebSocket(p) {
       }
       message("ws","nbClients="+wss.clients.length);
       wss.clients.forEach(function each(client) {
-        client.send(data,function ack(error) {message("ws","error sending : "+error.toString());});
+        client.send(data,function ack(error) {
+            message("ws","error sending : "+(error ? error.toString() : "..."));
+            //client.close();
+        });
       });
     };
     wss.on('close', function close(ws) {
@@ -29,7 +32,7 @@ function initWebSocket(p) {
     return wss;
 }
 function broadcast(data) { wss.broadcast(data); }
-//================================================
+//=============================================================================
 
 function message(id,txt) {
  var node=document.getElementById(id)
@@ -53,23 +56,76 @@ function transmit(data) {
     data[5]=( new Date().getTime() ) % 1000;
     nbm=(nbm+1)%1000;
     text=JSON.stringify(data);
-    message("ws2","sending "+text + " at " + (( new Date().getTime())%1000));
+    message("ws2",text + "<br>at " + (( new Date().getTime())%1000));
     broadcast(text);
+    drawPadxy(data[0],data[1]);
+    drawPadz(data[2]);
   }
 }
-var mouse=false;
-function mousepush() { mouse=true; }
+
+//========================= X/Y par pad virtuel ==========================
+function mooveall(event)  { return(true);}
+
+var mouseXY=false;
+function mousepush() { mouseXY=true; }
 function mouserelease(event) { 
-  mouse=false;
-  position("cross",event.offsetX-5,event.offsetY-5);  
+  mouseXY=false;
+  transmit([100,100,100,[0,0,0,0,0,0],-100,0]);
 }
 function mousemove(event) {
-   if (! mouse) return(flse);
-   event.stopPropagation()
-   position("cross",-10000,-10000);
+   if (! mouseXY) return(false);
+   event.preventDefault();   
+   position("cross",event.offsetX,event.offsetY);
    //message("a1","mouse : " + event.offsetX + "/" + event.offsetY);
-   transmit([event.offsetX,event.offsetY,0,[0,0,0,0,0,0],-100,0]);
+   x=Math.round((2*100.0*event.offsetX)/event.currentTarget.clientWidth  ) ;
+   y=Math.round((2*100.0*event.offsetY)/event.currentTarget.clientHeight ) ;
+   if (x>80 && x<120) x=100;
+   if (y>80 && y<120) y=100;
+   transmit([x,y,100,[0,0,0,0,0,0],-100,0]);
    return(true);
+}
+//========================= Zoom par pad virtuel ==========================
+var mouseZ=false;
+function zoommousepush() { mouseZ=true; }
+function zoommouserelease(event) { 
+   mouseZ=false;
+   transmit([100,100,100,[0,0,0,0,0,0],-100,0]);
+}
+function zoommousemove(event) {
+   if (! mouseZ) return(false);
+   event.preventDefault();   
+   position("cross",event.offsetX,event.offsetY);
+   //message("a1","mouse : " + event.offsetX + "/" + event.offsetY);
+   z=Math.round((2*100.0*event.offsetY)/event.currentTarget.clientHeight ) ;
+   transmit([100,100,z,[0,0,0,0,0,0],-100,0]);
+   return(true);
+}
+
+function button(no) {
+    var vb=[0,0,0,0,0,0];
+    vb[no%(vb.length)]=1
+    transmit([100,100,100,vb,-100,0]);
+}
+function drawPadxy(x,y) {
+    var marker= document.getElementById("xypos");
+    var x0=Math.round(marker.parentElement.clientWidth  * x/200.0 ) ;
+    var y0=Math.round(marker.parentElement.clientHeight * y/200.0) ;
+    //marker.setAttribute("cx", x);
+    //marker.setAttribute("cy", y);
+    var arrow= document.getElementById("arrowxy");
+    var triangle= document.getElementById("triangle");
+    arrow.setAttribute("x2", x0);
+    arrow.setAttribute("y2", y0);
+    var vis=(x==100 && y==100) ? "hidden" : "visible";
+    arrow.style.visibility= vis ;
+    triangle.style.visibility= vis; 
+}
+function drawPadz(z) {
+    var marker= document.getElementById("zpos");
+    z=Math.round(marker.parentElement.clientHeight * z/200.0) ;
+    x=Math.round(marker.parentElement.clientWidth  * 0.5 ) ;
+    marker.setAttribute("cx", x);
+    marker.setAttribute("cy", z);
 }
 //=============================================== 
 // Gamepad Agent
@@ -84,11 +140,14 @@ function mloop() {
 } 
 function loop() {
  if (! gpok) {
-     message("title","navigator.gamepad unknown");
+     document.body.style.backgroundColor="#AA0000";
+     message("title","Joystick Absent");
      var gps= (navigator.webkitGetGamepads && navigator.webkitGetGamepads()) || navigator.getGamepads();
-     message("title","Gamepad Ok, please Press something...  "+ gps.length);
+     message("title","Press PRESET1");
      var gp=gps[0];
-     message("title","Model : "+ gp.id)  ;
+     message("title",""+gp.id)  ;
+     setTimeout(function() {message("title","")},800);
+     document.body.style.backgroundColor="#333";
      gpok=true;
  }
  if (! gpok) return;
@@ -96,28 +155,31 @@ function loop() {
  // il faut relire la liste de gamepad: elle est dynamique (sous chrome)...
  gp=((navigator.webkitGetGamepads && navigator.webkitGetGamepads()) || navigator.getGamepads())[0];
  
- var str1="buttons states=";
- for (var ib=0;ib<6;ib++) str1=str1+" "+ (gp.buttons[ib].pressed ? ("<b>B"+(ib+1)+"</b>") : "B"+(ib+1))
- message("b1",str1);
-
  var vb=[0,0,0,0,0,0]
  for (var ib=0;ib<6;ib++) vb[ib]=gp.buttons[ib].pressed ? 1 : 0 ;
-
- //message("a1",""+Math.round(gp.axes[0]*1000));
- //message("a2",""+Math.round(gp.axes[1]*1000));
- //message("a3",""+Math.round(gp.axes[2]*1000));
  
- var x=1+gp.axes[0];
- var y=1+gp.axes[1];
- var z=1+gp.axes[2];
+ var x=(1+gp.axes[0])*100;
+ var y=(1+gp.axes[1])*100;
+ var z=(1+gp.axes[2])*100;
  position("cross",x*100-5,y*100-5);
- transmit([Math.round(x*100),Math.round(y*100),Math.round(z*100),vb,-100,0]);
+ if (x>90 && x<110) x=100;
+ if (y>90 && y<110) y=100;
+ if (z>80 && z<120) z=100;
+ if (! mouseXY && ! mouseZ)
+   transmit([Math.round(x),Math.round(y),Math.round(z),vb,-100,0]);
+}
+
+function togleDebug(b) {
+ var n=document.getElementById('debug').style; 
+ n.visibility= (n.visibility=='hidden') ? 'visible' : 'hidden';
+ for (id in 'b1 a1 a2 a3 ws ws2 stitle'.split(' ')) message(id,'');
+ b.value=(n.visibility=='hidden') ? 'set debug' : 'reset debug';
 }
 
 var idi=null;
 function init() {
  initWebSocket(1901);
- idi=setInterval(function() { mloop();},50);
+ idi=setInterval(function() { mloop();},80);
 };
 
 function unload() {
