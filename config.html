@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>Config Joy</title>
+<style>
+body  {
+    background: #444;
+    color:#AAA;
+    overflow:hidden;
+}
+* { margin:0px;}
+div {font-size: 10px;}
+</style>
+<script src="js/Detector.js"></script>
+<script src="js/three.min.js"></script>
+</head>
+
+<body onunload="ws.close();">
+<center><h2>Configuration</h2></center>
+<hr>
+<div id='cv'  style="width:400px; height:300px; background: #EEE;">
+</div>
+<hr>
+<center><input type='button' value='Masquer Fenetre' 
+ onclick='if (ipc) ipc.send("hideConfig");ws.close();'>
+</center>
+<div id='pos'>--</div>
+<div id='mes'>--</div>
+</body>
+<script>
+
+function message(id) {
+ var node=document.getElementById(id)
+ var str="";
+ for (var i=1;i<arguments.length;i++) str+=arguments[i];
+ if (node) node.innerHTML=str;
+}
+function doEvent(data) {
+ var x=data[0]-100,
+     y=data[1]-100,
+     z=data[2]-100,
+     boutons=data[3];
+ mouseX = x;
+ mouseY = y;   
+ message("pos",x,'/',y);
+}
+</script>
+<script>
+var ipc = require('ipc');
+var ok=false;
+var ws;
+function createClient(port) {
+  if (ok)  return;
+  ws = new WebSocket("ws://localhost:"+port);
+  ws.onopen = function() { message("mes","connected"); ok=true; };
+  ws.onclose = function() { message("mes","Disconnected");ok=false; };
+  ws.onmessage = function(event) { console.log(event.data); if (ok) doEvent(JSON.parse(event.data)); };
+  ok=true;
+}
+
+var mouseX = 0, mouseY = 0;
+var mousemoveX = 0, mousemoveY = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    webgl=this;
+    setTimeout(function() {createClient(1901);} , 100);
+    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
+
+    var cv=document.getElementById('cv')
+    var SCREEN_WIDTH = cv.offsetWidth;
+    var SCREEN_HEIGHT = cv.offsetHeight;
+    var FLOOR = 0;
+
+    var container=cv;
+
+    var camera, scene;
+    var webglRenderer;
+
+    var zmesh, geometry;
+
+
+    var windowHalfX = SCREEN_WIDTH / 2;
+    var windowHalfY = SCREEN_HEIGHT  / 2;
+    //cv.addEventListener( 'mousedown', onDocumentMouseDown, false );
+    //cv.addEventListener( 'mouseup', onDocumentMouseUp, false );
+    //cv.addEventListener( 'mousemove', onDocumentMouseMove, false );
+    //cv.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+
+
+    init();
+    animate();
+
+    function init() {
+
+      // camera
+      camera = new THREE.PerspectiveCamera( 75, SCREEN_WIDTH / SCREEN_HEIGHT, 1, 100000 );
+      camera.position.z = 75;
+
+      //scene
+      scene = new THREE.Scene();
+
+      // lights
+      var ambient = new THREE.AmbientLight( 0xffffff );
+      scene.add( ambient );
+
+      // more lights
+      var directionalLight = new THREE.DirectionalLight( 0xffeedd );
+      directionalLight.position.set( 0, -70, 100 ).normalize();
+      scene.add( directionalLight );
+
+      // renderer
+      webglRenderer = new THREE.WebGLRenderer();
+      webglRenderer.setSize( SCREEN_WIDTH, SCREEN_HEIGHT );
+      webglRenderer.domElement.style.position = "relative";
+      container.appendChild( webglRenderer.domElement );
+
+      createScene( ) ;
+
+    }
+    function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+
+        mesh = new THREE.Mesh( geometry, material );
+        mesh.scale.set( scale, scale, scale );
+        mesh.position.set( x, y, z );
+        mesh.rotation.set( rx, ry, rz );
+        mesh.overdraw = true;
+        scene.add( mesh );
+        return(mesh);
+    }
+    var PI=3.14;
+    function createScene( ) {
+      addMesh(new THREE.CubeGeometry( 100, 1, 100),
+          1,
+          0, 0,-20,
+          0.1 ,0,0,
+          new THREE.MeshPhongMaterial( { ambient: 0xFFFFFF, color: 0x202090, specular: 0x555555, shininess: 30 , opacity: 0.3} )); 
+      
+      zmesh = addMesh(new THREE.CylinderGeometry( 5, 20 ,5 ),
+         1,
+         0,20,0,
+         PI,0,0,
+         new THREE.MeshPhongMaterial( { 
+            ambient: 0x000000, color: 0xFFAA00, specular: 0x101010, 
+            shininess: 30 , opacity: 0.3
+         })
+      );
+    }
+
+    function onDocumentMouseDown(event) {
+    }
+
+    function onDocumentMouseUp(event) {
+    }
+
+    function onDocumentMouseWheel(event) {
+      camera.position.z -= event.wheelDelta/120*3;
+    }
+
+    function onDocumentMouseMove(event) {
+      mouseX = ( event.clientX - windowHalfX );
+      mouseY = ( event.clientY - windowHalfY );
+      mousemoveX += event.movementX ;
+      mousemoveY += event.movementY ;
+    }
+
+    function animate() {
+      requestAnimationFrame( animate );
+      render();
+    }
+
+    function render() {
+
+      if (zmesh) {
+        zmesh.rotation.set((mouseY)/windowHalfY + 0,
+                           (mouseX)/windowHalfX, 0);
+      }
+      webglRenderer.render( scene, camera );
+    }
+
+});
+
+
+</script>
+</html>
