@@ -29,13 +29,10 @@ press a button on the  joystick to activate the server ...
 Files
 ===
 
-** main.js** : startup Electron : load index.html
-
-**index.html** : main page, with include joy.js
-
-**joy.js** : gamepad and websocket server.
-
-**client_test.html** : can be invoked by a navigator for client websocket test.
+* **main.js** : startup Electron : load index.html
+* **index.html** : main page, with include joy.js
+* **joy.js** : gamepad and websocket server.
+* **client_test.html** : can be invoked by a navigator for client websocket test.
 
 modules :
 *  ws for a websocket server,
@@ -44,3 +41,10 @@ modules :
 License
 ====
 MIT
+use three.js for apropos.
+
+TODO
+====
+
+Quadcopter simulation with the joystick as remote controle :)
+
