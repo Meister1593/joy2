@@ -17,7 +17,8 @@ app.on('window-all-closed', function() {
 });
 
 app.on('ready', function() {
-  if (app.dock && app.dock.hide) app.dock.hide();
+  if (app.dock && app.dock.hide) 
+      app.dock.hide();
   mainWindow = new BrowserWindow({
       x: -1270,y: 1,
       width: 230, height: 280, 
@@ -26,21 +27,23 @@ app.on('ready', function() {
       //transparent: true
   });
   mainWindow.loadUrl('file://' + __dirname + '/index.html');
-  //mainWindow.webContents.openDevTools();
   
-  mainWindow.on('closed', function() {
-    mainWindow = null;
-  });
+  //mainWindow.webContents.openDevTools();// DEBUG
+  
+  mainWindow.on('closed', function() { mainWindow = null; });
   
   ipc.on("showConfig", function() { 
-      if (configWindow)
+      if (configWindow) {
           configWindow.close();
+          return;
+      }
       configWindow = new BrowserWindow({
+          x: -1000,y: 100,
           width: 400, height: 500, 
           show: true
       });
       configWindow.loadUrl('file://' + __dirname + '/config.html');
-  }
-  );
+      configWindow.on('closed', function() { configWindow = null; });
+  });
   ipc.on("hideConfig", function() { configWindow.hide();});
 });

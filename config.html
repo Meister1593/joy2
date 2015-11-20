@@ -17,35 +17,110 @@ div {font-size: 10px;}
 </head>
 
 <body onunload="ws.close();">
-<center><h2>Configuration</h2></center>
+<center><h2>Joystick Tester</h2></center>
 <hr>
-<div id='cv'  style="width:400px; height:300px; background: #EEE;">
+<div id='cv'  style="width:400px; height:400px; background: #EEE;">
 </div>
 <hr>
-<center><input type='button' value='Masquer Fenetre' 
- onclick='if (ipc) ipc.send("hideConfig");ws.close();'>
-</center>
+<div id='typ'>--</div>
 <div id='pos'>--</div>
 <div id='mes'>--</div>
 </body>
+<!-- ======================== Evenements Joystick ====================== -->
 <script>
 
 function message(id) {
  var node=document.getElementById(id)
  var str="";
- for (var i=1;i<arguments.length;i++) str+=arguments[i];
+ for (var i=1;i<arguments.length;i++) str+=arguments[i]+' ';
  if (node) node.innerHTML=str;
 }
+var isGamepad=false;
+message('typ',"Joystick mono-axe");
 function doEvent(data) {
- var x=data[0]-100,
-     y=data[1]-100,
-     z=data[2]-100,
-     boutons=data[3];
+ if (isGamepad==false && data[0][5]!=100) {
+  isGamepad=true;
+  message('typ',"GamePad 4 axes");
+ }
+ if (isGamepad) {
+     var z=data[0][1]-100,
+         r=data[0][0]-100,
+         y=data[0][2]-100,
+         x=data[0][5]-100;
+ } else {
+     var x=data[0][0]-100,
+         y=data[0][1]-100,
+         z=data[0][2]-100,
+         r=0;
+ }
+ boutons=data[1];
  mouseX = x;
  mouseY = y;   
- message("pos",x,'/',y);
+ mouseZ = z;
+ mouseR = r;
+ if ( boutons[4]==1) { 
+   posx=0;posy=0;vx=0;vy=0;posz=10;vz=0;
+ }
+ if ( boutons[1]==1) { 
+    posx=0; posy=100; posz=0;
+ }
+ message("pos=",x,'/',y,'/',z,'R',r);
 }
+
+<!-- ======================== Utilitées ====================== -->
+
+var camera, scene;
+var webglRenderer;
+
+function r(a) { return Math.round(a*10)/10.0 }
+function hypot(a,b,c) { return Math.sqrt(a*a+b*b+c*c) }
+function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
+
+    mesh = new THREE.Mesh( geometry, material );
+    mesh.position.set( 0, 0, 0 );
+    mesh.scale.set( scale, scale, scale );
+    mesh.overdraw = true;
+    scene.add( mesh );
+    mesh.position.set( x, y, z );
+    mesh.rotation.set( rx, ry, rz );
+    return(mesh);
+}
+function addbat(x,z,  w,l,h,color) {
+  var b=addMesh(new THREE.CubeGeometry( w, h, l),
+      1,
+      x, h/2,z,
+      0 ,ar(-1.1,1.1),0,
+      new THREE.MeshPhongMaterial( { ambient: 0x303030, color: color, specular: 0x555555, shininess: 30 , opacity: 1.0} )); 
+  return(b);
+}
+function makeText(x0,y0,z0,text,color,s,h) {
+    var textGeo = new THREE.TextGeometry( text, {
+      size: s,
+      height: h,
+      font: "optimer",
+      style: "normal",
+      bevelThickness: 10,
+      bevelSize: 0.5,
+      bevelEnabled: true,
+      bend: false,
+      material: 0,
+      extrudeMaterial: 1
+    });
+    textGeo.computeBoundingBox();
+    textGeo.computeVertexNormals();
+    var centerOffset = -0.5 * ( textGeo.boundingBox.x[ 1 ] - textGeo.boundingBox.x[ 0 ] );
+    var textMesh1 = new THREE.Mesh( textGeo ,  new THREE.MeshBasicMaterial( { color: color, opacity: 1.0, transparent: true }));
+    textMesh1.position.x = x0+centerOffset;
+    textMesh1.position.y = y0;
+    textMesh1.position.z = z0;
+    textMesh1.rotation.x = 0;
+    textMesh1.rotation.y = Math.PI * 2;
+    scene.add(  textMesh1 );
+}
+var PI=3.14159;
+function ar(min,max) {return(1.0+min+Math.random()*(max-min)) ;}
 </script>
+<!-- ======================== 3D ====================== -->
 <script>
 var ipc = require('ipc');
 var ok=false;
@@ -55,37 +130,38 @@ function createClient(port) {
   ws = new WebSocket("ws://localhost:"+port);
   ws.onopen = function() { message("mes","connected"); ok=true; };
   ws.onclose = function() { message("mes","Disconnected");ok=false; };
-  ws.onmessage = function(event) { console.log(event.data); if (ok) doEvent(JSON.parse(event.data)); };
+  ws.onmessage = function(event) { 
+    //console.log(event.data); 
+    if (ok) doEvent(JSON.parse(event.data)); 
+  };
   ok=true;
 }
 
-var mouseX = 0, mouseY = 0;
-var mousemoveX = 0, mousemoveY = 0;
+var mouseX = 0, mouseY = 0, mouseZ = 0, mouseR=0 ;
+var posx=0,posy=0,posz=0, vx=0,vy=0, vz=0;
+
 
 document.addEventListener('DOMContentLoaded', function() {
     webgl=this;
     setTimeout(function() {createClient(1901);} , 100);
-    if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
 
     var cv=document.getElementById('cv')
     var SCREEN_WIDTH = cv.offsetWidth;
     var SCREEN_HEIGHT = cv.offsetHeight;
     var FLOOR = 0;
-
     var container=cv;
-
-    var camera, scene;
-    var webglRenderer;
-
-    var zmesh, geometry;
-
-
+    var player, geometry;
     var windowHalfX = SCREEN_WIDTH / 2;
     var windowHalfY = SCREEN_HEIGHT  / 2;
-    //cv.addEventListener( 'mousedown', onDocumentMouseDown, false );
-    //cv.addEventListener( 'mouseup', onDocumentMouseUp, false );
-    //cv.addEventListener( 'mousemove', onDocumentMouseMove, false );
-    //cv.addEventListener( 'mousewheel', onDocumentMouseWheel, false );
+    
+    var K_LEFT=37;
+    var K_RIGHT=39;
+    var K_UP=38;
+    var K_DOWN=40;
+    var K_UP=38;
+    var K_DOWN=40;
+    var currentlyPressedKeys={};
+    var padir=0,pvdir=0,pdir=0;
 
 
     init();
@@ -101,12 +177,12 @@ document.addEventListener('DOMContentLoaded', function() {
       scene = new THREE.Scene();
 
       // lights
-      var ambient = new THREE.AmbientLight( 0xffffff );
+      var ambient = new THREE.AmbientLight( 0xA0A0A0 );
       scene.add( ambient );
 
       // more lights
       var directionalLight = new THREE.DirectionalLight( 0xffeedd );
-      directionalLight.position.set( 0, -70, 100 ).normalize();
+      directionalLight.position.set( -800, 700, -800 ).normalize();
       scene.add( directionalLight );
 
       // renderer
@@ -116,70 +192,87 @@ document.addEventListener('DOMContentLoaded', function() {
       container.appendChild( webglRenderer.domElement );
 
       createScene( ) ;
+      document.onkeydown = function(event) {currentlyPressedKeys[event.keyCode] = true;};
+      document.onkeyup =  function(event) {currentlyPressedKeys[event.keyCode] = false;};
 
     }
-    function addMesh( geometry, scale, x, y, z, rx, ry, rz, material ) {
 
-        mesh = new THREE.Mesh( geometry, material );
-        mesh.scale.set( scale, scale, scale );
-        mesh.position.set( x, y, z );
-        mesh.rotation.set( rx, ry, rz );
-        mesh.overdraw = true;
-        scene.add( mesh );
-        return(mesh);
-    }
-    var PI=3.14;
     function createScene( ) {
-      addMesh(new THREE.CubeGeometry( 100, 1, 100),
+      //========= Floor
+      addMesh(new THREE.CubeGeometry( 1000, 1, 1000), 
           1,
           0, 0,-20,
-          0.1 ,0,0,
-          new THREE.MeshPhongMaterial( { ambient: 0xFFFFFF, color: 0x202090, specular: 0x555555, shininess: 30 , opacity: 0.3} )); 
+          0 ,0,0,
+          new THREE.MeshPhongMaterial( { ambient: 0xA0A0A0, color: 0x2020FF, specular: 0x555555, shininess: 30 , opacity: 0.3} )); 
+          
+      // ======================== buildings, en vracs
       
-      zmesh = addMesh(new THREE.CylinderGeometry( 5, 20 ,5 ),
-         1,
-         0,20,0,
-         PI,0,0,
-         new THREE.MeshPhongMaterial( { 
-            ambient: 0x000000, color: 0xFFAA00, specular: 0x101010, 
-            shininess: 30 , opacity: 0.3
-         })
-      );
-    }
-
-    function onDocumentMouseDown(event) {
-    }
-
-    function onDocumentMouseUp(event) {
-    }
-
-    function onDocumentMouseWheel(event) {
-      camera.position.z -= event.wheelDelta/120*3;
-    }
-
-    function onDocumentMouseMove(event) {
-      mouseX = ( event.clientX - windowHalfX );
-      mouseY = ( event.clientY - windowHalfY );
-      mousemoveX += event.movementX ;
-      mousemoveY += event.movementY ;
+      for (var i=0;i<50;i++)   
+        addbat(ar(-400,400),ar(-400,+400),     30,30,ar(30,80), ar(-32000,32000));
+        
+      
+      // ================= Joueur , model en fichier OU OVNI...
+      if (true) {
+          player =  addbat(550,550,     60,10,10, 0xBB0000);
+      } else {
+          player = addMesh(new THREE.CylinderGeometry( 5, 1 ,20 ,30),
+             1.4,
+             -400,30,-400,
+             Math.PI/2.0,0,0,
+             new THREE.MeshPhongMaterial( { 
+                ambient: 0x000000, color: 0xFFAA00, specular: 0x101010, 
+                shininess: 30 , opacity: 1.0
+             })
+          );
+      }
     }
 
     function animate() {
       requestAnimationFrame( animate );
       render();
     }
-
     function render() {
-
-      if (zmesh) {
-        zmesh.rotation.set((mouseY)/windowHalfY + 0,
-                           (mouseX)/windowHalfX, 0);
+      var rddir=(Math.PI*pdir)/180.0;
+      var ax=mouseX*Math.cos(rddir)-mouseY*Math.sin(rddir);
+      var ay=mouseX*Math.sin(rddir)+mouseY*Math.cos(rddir);
+      message('mes',"Acc",r(ax),r(ay),' // ',mouseX,mouseY,""+r(pdir%360));
+      vx=(vx+ax/4000.0)*0.99;
+      vy=(vy+(-mouseZ)/600.0)*0.9;
+      vz=(vz+ay/4000.0)*0.99;
+      //message('mes',JSON.stringify(currentlyPressedKeys));
+      //console.dir(JSON.stringify(currentlyPressedKeys));
+      if (isGamepad) {
+        pvdir=(pvdir+(-mouseR)/800.0)*0.9;        
+      } else {
+          if (currentlyPressedKeys[K_LEFT])  padir+=1.5;
+          else if (currentlyPressedKeys[K_RIGHT]) padir-=1.5;
+          else padir=0;
+          pvdir=(pvdir+padir)*0.99;
       }
+      posx+=vx;
+      posy+=vy;
+      posz+=vz;
+      pdir+=pvdir;
+      pdir=Math.round(pdir)%360;
+      //pdir=0;
+      //message('mes',"Position ",r(posx),r(posy),r(posz),' v=',r(vx),r(vy),r(vz));
+      
+      player.position.set(posx,posy,posz);
+      player.rotation.y=(Math.PI*pdir)/180.0;
+      
+      //var v=hypot(vx,vy,vz);
+      //var dv=new THREE.Vector3(vx, vy, vz).multiplyScalar(1/v);
+      //var dist=hypot(player.position.x,player.position.y,player.position.z);
+      //var d= (v>1) ? 10 : 30/(3+v);
+      camera.position.set(0,posy/2+300,0);/*
+           player.position.x-   500*dv.x - d, 
+           player.position.y -  500*dv.y - d, 
+           player.position.z -  500*dv.z - d);*/
+      camera.lookAt( player.position );
       webglRenderer.render( scene, camera );
     }
 
 });
-
 
 </script>
 </html>

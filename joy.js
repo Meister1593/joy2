@@ -20,8 +20,10 @@ function initWebSocket(p) {
       message("ws","nbClients="+wss.clients.length);
       wss.clients.forEach(function each(client) {
         client.send(data,function ack(error) {
-            message("ws","error sending : "+(error ? error.toString() : "..."));
-            //client.close();
+            if (error) {
+              message("ws","error sending : "+(error ? error.toString() : "..."));
+              client.close();
+            }
         });
       });
     };
@@ -47,19 +49,21 @@ function position(id,x,y) {
 }
 var oldText="";
 var nbm=0;
+
+// tramsmit([laxes,lbuttons,_,_]) 
 function transmit(data) {
   text=data.toString();
   if (oldText===text) return;
   if (broadcast) {
     oldText=text;
-    data[4]=nbm
-    data[5]=( new Date().getTime() ) % 1000;
+    data[2]=nbm
+    data[3]=( new Date().getTime() ) % 1000;
     nbm=(nbm+1)%1000;
     text=JSON.stringify(data);
     message("ws2",text + "<br>at " + (( new Date().getTime())%1000));
     broadcast(text);
-    drawPadxy(data[0],data[1]);
-    drawPadz(data[2]);
+    drawPadxy(data[0][0],data[0][1]);
+    drawPadz(data[0][2]);
   }
 }
 
@@ -70,7 +74,7 @@ var mouseXY=false;
 function mousepush() { mouseXY=true; }
 function mouserelease(event) { 
   mouseXY=false;
-  transmit([100,100,100,[0,0,0,0,0,0],-100,0]);
+  transmit([[100,100,100,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],-100,0]);
 }
 function mousemove(event) {
    if (! mouseXY) return(false);
@@ -81,7 +85,7 @@ function mousemove(event) {
    y=Math.round((2*100.0*event.offsetY)/event.currentTarget.clientHeight ) ;
    if (x>80 && x<120) x=100;
    if (y>80 && y<120) y=100;
-   transmit([x,y,100,[0,0,0,0,0,0],-100,0]);
+   transmit([[x,y,100,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],-100,0]);
    return(true);
 }
 //========================= Zoom par pad virtuel ==========================
@@ -89,7 +93,7 @@ var mouseZ=false;
 function zoommousepush() { mouseZ=true; }
 function zoommouserelease(event) { 
    mouseZ=false;
-   transmit([100,100,100,[0,0,0,0,0,0],-100,0]);
+   transmit([[100,100,100,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],-100,0]);
 }
 function zoommousemove(event) {
    if (! mouseZ) return(false);
@@ -97,14 +101,14 @@ function zoommousemove(event) {
    position("cross",event.offsetX,event.offsetY);
    //message("a1","mouse : " + event.offsetX + "/" + event.offsetY);
    z=Math.round((2*100.0*event.offsetY)/event.currentTarget.clientHeight ) ;
-   transmit([100,100,z,[0,0,0,0,0,0],-100,0]);
+   transmit([[100,100,z,0,0,0,0],[0,0,0,0,0,0,0,0,0,0,0,0],-100,0]);
    return(true);
 }
 
 function button(no) {
-    var vb=[0,0,0,0,0,0];
+    var vb=[0,0,0,0,0,0,0,0,0,0,0,0];
     vb[no%(vb.length)]=1
-    transmit([100,100,100,vb,-100,0]);
+    transmit([[100,100,100,0,0,0,0],vb,-100,0]);
 }
 function drawPadxy(x,y) {
     var marker= document.getElementById("xypos");
@@ -155,18 +159,19 @@ function loop() {
  // il faut relire la liste de gamepad: elle est dynamique (sous chrome)...
  gp=((navigator.webkitGetGamepads && navigator.webkitGetGamepads()) || navigator.getGamepads())[0];
  
- var vb=[0,0,0,0,0,0]
- for (var ib=0;ib<6;ib++) vb[ib]=gp.buttons[ib].pressed ? 1 : 0 ;
+ var vb=[0,0,0,0,0,0,0,0,0,0,0,0];
+ for (var ib=0;ib<gp.buttons.length&&ib<vb.length;ib++) vb[ib]=gp.buttons[ib].pressed ? 1 : 0 ;
+ if (vb[3]==1 && gp.axes[2]>0.98) ipc.send("showConfig") ;
  
- var x=(1+gp.axes[0])*100;
- var y=(1+gp.axes[1])*100;
- var z=(1+gp.axes[2])*100;
- position("cross",x*100-5,y*100-5);
- if (x>90 && x<110) x=100;
- if (y>90 && y<110) y=100;
- if (z>80 && z<120) z=100;
+ var va=[100,100,100,0,0,0,0] ;
+ for (var ia=0;ia<gp.axes.length&&ia<va.length;ia++) {
+  var v=(1+gp.axes[ia])*100;
+  //if (v>90 && v<110) v=100;
+  va[ia]=Math.round(v);
+ }
+ position("cross",va[0],va[1]);
  if (! mouseXY && ! mouseZ)
-   transmit([Math.round(x),Math.round(y),Math.round(z),vb,-100,0]);
+   transmit([va,vb,-100,0]);
 }
 
 function togleDebug(b) {
