@@ -30,21 +30,18 @@ Files
 ===
 
 * **main.js** : startup Electron : load index.html
-* **index.html** : main page, with include joy.js
-* **joy.js** : gamepad and websocket server.
+* **index.html** : main page, viruak pad in SVG, include joy.js
+* **joy.js** : gamepad virtual and real, websocket server for js ditribution.
 * **client_test.html** : can be invoked by a navigator for client websocket test.
 
-modules :
+modules used:
 *  ws for a websocket server,
 *  many many module for Electron  GUI : Chromium under Node.js.
    
 License
 ====
+
 MIT
-use three.js for apropos.
 
-TODO
-====
-
-Quadcopter simulation with the joystick as remote controle :)
+Use three.js for apropos.
 
