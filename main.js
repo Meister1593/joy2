@@ -39,7 +39,7 @@ app.on('ready', function() {
       }
       configWindow = new BrowserWindow({
           x: -1000,y: 100,
-          width: 400, height: 500, 
+          width: 1000, height: 800, 
           show: true
       });
       configWindow.loadUrl('file://' + __dirname + '/config.html');

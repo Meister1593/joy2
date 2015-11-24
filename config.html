@@ -12,8 +12,6 @@ body  {
 * { margin:0px;}
 div {font-size: 10px;}
 </style>
-<script src="js/Detector.js"></script>
-<script src="js/three.min.js"></script>
 </head>
 
 <body onunload="ws.close();">
@@ -27,6 +25,10 @@ div {font-size: 10px;}
 <div id='mes'>--</div>
 </body>
 <!-- ======================== Evenements Joystick ====================== -->
+<script src="js/Detector.js"></script>
+<script src="js/three.min.js"></script>
+<script src="js/optimer_bold.typeface.js"></script>
+<script src="js/optimer_regular.typeface.js"></script>
 <script>
 
 function message(id) {
@@ -93,12 +95,12 @@ function addbat(x,z,  w,l,h,color,opacity) {
   mat.transparent= (opacity<1.0) ? true : false ;
   var b=addMesh(new THREE.CubeGeometry( w, h, l),
       1,
-      x, h/2,z,
+      x+w/2, h/2,z+h/2,
       0 ,ar(-1.1,1.1),0,
       mat); 
   return(b);
 }
-function makeText(x0,y0,z0,text,color,s,h) {
+function makeText(x0,y0,z0,r,text,color,opacity,s,h) {
     var textGeo = new THREE.TextGeometry( text, {
       size: s,
       height: h,
@@ -111,15 +113,15 @@ function makeText(x0,y0,z0,text,color,s,h) {
       material: 0,
       extrudeMaterial: 1
     });
-    textGeo.computeBoundingBox();
-    textGeo.computeVertexNormals();
-    var centerOffset = -0.5 * ( textGeo.boundingBox.x[ 1 ] - textGeo.boundingBox.x[ 0 ] );
-    var textMesh1 = new THREE.Mesh( textGeo ,  new THREE.MeshBasicMaterial( { color: color, opacity: 1.0, transparent: true }));
-    textMesh1.position.x = x0+centerOffset;
-    textMesh1.position.y = y0;
-    textMesh1.position.z = z0;
+    var textMesh1 = new THREE.Mesh( textGeo ,  new THREE.MeshBasicMaterial( { 
+        color: color, opacity: opacity, 
+        transparent: ((opacity==1.0) ? false : true) 
+    }));
+    textMesh1.position.x = x0;
+    textMesh1.position.y = z0;
+    textMesh1.position.z = y0;
     textMesh1.rotation.x = 0;
-    textMesh1.rotation.y = Math.PI * 2;
+    textMesh1.rotation.y = (Math.PI*r)/180.0;
     scene.add(  textMesh1 );
 }
 var PI=3.14159;
@@ -139,7 +141,7 @@ function createClient(port) {
 }
 
 var mouseX = 0, mouseY = 0, mouseZ = 0, mouseR=0 ;
-var posx=0,posy=0,posz=0, vx=0,vy=0, vz=0;
+var posx=0,posy=200,posz=0, vx=0,vy=0, vz=0;
 
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -162,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var K_UP=38;
     var K_DOWN=40;
     var currentlyPressedKeys={};
-    var padir=0,pvdir=0,pdir=0;
+    var adir=0,vdir=0,dir=0,rad_dir=0;
 
 
     init();
@@ -208,13 +210,18 @@ document.addEventListener('DOMContentLoaded', function() {
           
       // ======================== buildings, en vracs
       
-      for (var i=0;i<200;i++)   
+      for (var i=0;i<70;i++)   
         addbat(ar(-400,400),ar(-400,+400),     30,30,ar(30,80), ar(-32000,32000),0.9);
+     addbat(0,0,     1,1,4, 0xFFAAAA,1.0);
         
+      //for (var i=0;i<20;i++)   
+      //  addbrige(ar(-400,400),ar(-400,+400),     30,30,ar(30,80), ar(-32000,32000),0.9);
+        
+      makeText(-200,470,0,5,"0 88XX 8 8 B D WM",0xA0A0A0,0.9,70,40) ;
       
       // ================= Joueur , model en fichier OU OVNI...
       if (true) {
-          player =  addbat(550,550,     6,4,1, 0xBB0000,1);
+          player =  addbat(0,0,     6,4,1, 0xBB0000,1);
       } else {
           player = addMesh(new THREE.CylinderGeometry( 5, 1 ,20 ,30),
              1.4,
@@ -233,40 +240,43 @@ document.addEventListener('DOMContentLoaded', function() {
       render();
     }
     function render() {
-      var rddir=(Math.PI*pdir)/180.0;
       
-      var ax=(mouseX*Math.cos(-rddir))+(-mouseY*Math.cos(-rddir+Math.PI/2.0));
-      var ay=(mouseX*Math.sin(-rddir))+(-mouseY*Math.sin(-rddir+Math.PI/2.0));
+      var ax=(mouseX*Math.cos(rad_dir))+(-mouseY*Math.cos(rad_dir+Math.PI/2.0));
+      var ay=(mouseX*Math.sin(rad_dir))+(-mouseY*Math.sin(rad_dir+Math.PI/2.0));
       
-      vx=(vx+ax/4000.0)*0.99;
-      vy=(vy+(-mouseZ)/700.0)*0.85;
-      vz=(vz+ay/4000.0)*0.99;
+      vx=(vx+ax/4000.0)*0.995;
+      vy=(vy+(-mouseZ-10)/1000.0)*0.95;
+      vz=(vz+ay/4000.0)*0.995;
       
       if (isGamepad) {
-        pvdir=(pvdir+(-mouseR)/1200.0)*0.95;        
+        vdir=(vdir+(-mouseR)/1200.0)*0.95;        
       } else {
-          if (currentlyPressedKeys[K_LEFT])  padir+=1.5;
-          else if (currentlyPressedKeys[K_RIGHT]) padir-=1.5;
-          else padir=0;
-          pvdir=(pvdir+padir)*0.99;
+          if (currentlyPressedKeys[K_LEFT])  adir+=1.5;
+          else if (currentlyPressedKeys[K_RIGHT]) adir-=1.5;
+          else adir=0;
+          vdir=(vdir+adir)*0.99;
       }
       posx+=vx;
-      posy+=vy;
+      posy=max(1,posy+vy);
       posz+=vz;
-      pdir+=pvdir;
-      pdir=pdir%360;
+      dir+=vdir;
+      dir=(dir+360.0)%360;
+      rad_dir=-(Math.PI*dir)/180.0;
       
       
       player.position.set(posx,posy,posz);
-      player.rotation.y=(Math.PI*pdir)/180.0;
+      player.rotation.y=-rad_dir;
       
-      // ================ Inclinanson selon accelerations
+      // ================ Inclinaison selon accelerations
+      
       player.rotation.z=-mouseX/400;
       player.rotation.x=-mouseY/400;
       
-      var camx= posx + (20*Math.cos(-rddir));
-      var camy= posy + max(10,3 + 20*vy) ;
-      var camz= posz + (20*Math.sin(-rddir));
+      // ================ Camera : subjestive
+      
+      var camx= posx + (20*Math.cos(-rad_dir));
+      var camy= posy + 3 + 2*vy;
+      var camz= posz + (20*Math.sin(rad_dir));
       camera.position.set(camx,camy,camz);
       camera.lookAt(player.position);
       webglRenderer.render( scene, camera );
