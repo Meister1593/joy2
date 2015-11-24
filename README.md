@@ -12,11 +12,11 @@ The joystick USB should be configured as gamepad, et  seeing by  Chrome/Chormium
 
 Websocket distribution offer jouystick acces for any application which 
 do not support HID ou XInput.
-Message is JSON.singify of ```[axes,buttons,nomess,time_ms]```, with :
+Message is JSON.stringify of ```[axes,buttons,nomess,time_ms]```, with :
 * **axes** : array of values of 7 axes, values are 0..200, 0 is 100
 * **buttons** : buttons states of 12 buttons, values are 0 or 1
-* **nomessage** : increemented for each message
-* **time_ms** : timepstamp of event (new Date().getTime() % 1000)
+* **nomessage** : incremented for each message
+* **time_ms** : timestamp of event (new Date().getTime() % 1000)
 
 Usage
 === 
