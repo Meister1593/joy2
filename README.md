@@ -1,16 +1,22 @@
 Presentation
 ===
-Electron application  for dispatch local Joystick data to WebSocket client 
+[Electron](https://github.com/atom/electron) application  for dispatch local Joystick data to WebSocket client 
 
 
+Should work on any environnement suppporting Electron.
 
-Should work on any environnement suppporting Electron.Tested on Windows 7.
+Tested on Windows 7.
 
 The joystick USB should be configured as gamepad, et  seeing by  Chrome/Chormium (HTML 5).
 (HID/Xinput device)
 
 Websocket distribution offer jouystick acces for any application which 
 do not support HID ou XInput.
+Message is JSON.singify of ```[axes,buttons,nomess,time_ms]```, with :
+* **axes** : array of values of 7 axes, values are 0..200, 0 is 100
+* **buttons** : buttons states of 12 buttons, values are 0 or 1
+* **nomessage** : increemented for each message
+* **time_ms** : timepstamp of event (new Date().getTime() % 1000)
 
 Usage
 === 
@@ -24,18 +30,20 @@ or
 > firefox client_test.html
 ```
 
-press a button on the  joystick to activate the server ...
+Press the button '1' on the  joystick to activate the server ...
+(this is a html5 gamepad chrome requirement)
 
 Files
 ===
 
 * **main.js** : startup Electron : load index.html
-* **index.html** : main page, viruak pad in SVG, include joy.js
-* **joy.js** : gamepad virtual and real, websocket server for js ditribution.
+* **index.html** : main page, virual pad in SVG, include joy.js
+* **joy.js** : gamepad client, virtual and real, websocket server for js ditribution.
 * **client_test.html** : can be invoked by a navigator for client websocket test.
+* **config.html** : Webgl tester , quadcopter simulator :) can be use directly by a navigator, or in electron app by (button 4)+(Zoom max).
 
 modules used:
-*  ws for a websocket server,
+*  **ws** for websocket server,
 *  many many module for Electron  GUI : Chromium under Node.js.
    
 License
