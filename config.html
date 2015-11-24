@@ -38,6 +38,7 @@ function message(id) {
  if (node) node.innerHTML=str;
 }
 var isGamepad=false;
+var boutons=[0,0,0,0,0,0,0,0,0,0,0,0];
 message('typ',"Joystick mono-axe");
 function doEvent(data) {
  if (isGamepad==false && data[0][5]!=100) {
@@ -60,9 +61,6 @@ function doEvent(data) {
  mouseY = y;   
  mouseZ = z;
  mouseR = r;
- if ( boutons[4]==1) { 
-   posx=0;posy=0;vx=0;vy=0;posz=10;vz=0;
- }
  if ( boutons[1]==1) { 
     posx=0; posy=100; posz=0;
  }
@@ -245,7 +243,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var ay=(mouseX*Math.sin(rad_dir))+(-mouseY*Math.sin(rad_dir+Math.PI/2.0));
       
       vx=(vx+ax/4000.0)*0.995;
-      vy=(vy+(-mouseZ-10)/1000.0)*0.95;
+      vy=(vy+(-mouseZ-40)/6000.0)*0.95;
       vz=(vz+ay/4000.0)*0.995;
       
       if (isGamepad) {
@@ -255,6 +253,9 @@ document.addEventListener('DOMContentLoaded', function() {
           else if (currentlyPressedKeys[K_RIGHT]) adir-=1.5;
           else adir=0;
           vdir=(vdir+adir)*0.99;
+      }
+      if (boutons[2]==1) {
+         vx=vy=vz=0;
       }
       posx+=vx;
       posy=max(1,posy+vy);
