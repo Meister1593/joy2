@@ -4,6 +4,7 @@
 
 var WebSocketServer = require('ws').Server;
 var wss =null;
+var isGamepad=false;
 function initWebSocket(p) {
     wss = new WebSocketServer({ port: p });
     wss.on('connection', function connection(ws) {
@@ -161,12 +162,16 @@ function loop() {
  
  var vb=[0,0,0,0,0,0,0,0,0,0,0,0];
  for (var ib=0;ib<gp.buttons.length&&ib<vb.length;ib++) vb[ib]=gp.buttons[ib].pressed ? 1 : 0 ;
- if (vb[3]==1 && gp.axes[2]>0.98) ipc.send("showConfig") ;
+ if (vb[3]==1 && gp.axes[2]>0.98) {
+     ipc.send("showConfig") 
+     isGamepad=true;
+ };
  
  var va=[100,100,100,0,0,0,0] ;
  for (var ia=0;ia<gp.axes.length&&ia<va.length;ia++) {
   var v=(1+gp.axes[ia])*100;
-  //if (v>90 && v<110) v=100;
+  if (! isGamepad) 
+      if (v>90 && v<110) v=100;
   va[ia]=Math.round(v);
  }
  position("cross",va[0],va[1]);
