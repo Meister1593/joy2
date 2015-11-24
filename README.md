@@ -8,7 +8,7 @@ Should work on any environnement suppporting Electron.
 Tested on Windows 7.
 
 The joystick USB should be configured as gamepad, et  seeing by  Chrome/Chormium (HTML 5).
-(HID/Xinput device)
+(HID/Xinput device): Browser Test (FF/Chrome/Webkit) can be done with : http://html5gamepad.com/
 
 Websocket distribution offer jouystick acces for any application which 
 do not support HID ou XInput.
