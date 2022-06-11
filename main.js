@@ -4,9 +4,7 @@
  
 =======================================================================*/
 
-var app = require('app');  // Module to control application life.
-var BrowserWindow = require('browser-window');  // Module to create native var 
-var ipc = require('ipc'); 
+const {app, BrowserWindow, IpcRenderer} = require('electron')
 var mainWindow = null;
 var configWindow = null;
 
@@ -32,7 +30,7 @@ app.on('ready', function() {
   
   mainWindow.on('closed', function() { mainWindow = null; });
   
-  ipc.on("showConfig", function() { 
+  IpcRenderer.on("showConfig", function() { 
       if (configWindow) {
           configWindow.close();
           return;
@@ -45,5 +43,5 @@ app.on('ready', function() {
       configWindow.loadUrl('file://' + __dirname + '/config.html');
       configWindow.on('closed', function() { configWindow = null; });
   });
-  ipc.on("hideConfig", function() { configWindow.hide();});
+  IpcRenderer.on("hideConfig", function() { configWindow.hide();});
 });

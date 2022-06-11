@@ -22,7 +22,13 @@
   },
   "homepage": "https://github.com/glurp/joy2#readme",
   "devDependencies": {
-    "electron-prebuilt": "^1.4.13"
+    "electron-prebuilt": "^1.4.13",
+    "eslint": "^8.17.0"
+  },
+  "eslintConfig": {
+    "env": {
+      "node": true
+    }
   },
   "dependencies": {
     "ansi-regex": "^6.0.1",
